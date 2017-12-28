@@ -1,8 +1,7 @@
-from __future__ import print_function
-
+# import a time series datasets
 from keras.datasets import mnist
 from keras.utils.np_utils import to_categorical
-from devol import DEvol, GenomeHandler
+from devol import DEvol, Genome, RecurrentGene, ConvGene, DenseGene
 import numpy as np
 from keras import backend as K
 
@@ -18,21 +17,23 @@ x_test = x_test.reshape(x_test.shape[0], 28, 28, 1).astype('float32') / 255
 y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
 dataset = ((x_train, y_train), (x_test, y_test))
+print('Dataset ready, input='+str(x_train.shape))
 
 # **Prepare the genome configuration**
 # The `GenomeHandler` class handles the constraints that are imposed upon
 # models in a particular genetic program. See `genome-handler.py`
 # for more information.
 
-max_conv_layers = 6
-max_dense_layers = 2 # including final softmax layer
-max_conv_kernals = 256
-max_dense_nodes = 1024
-input_shape = x_train.shape[1:]
-num_classes = 10
 
-genome_handler = GenomeHandler(max_conv_layers, max_dense_layers, max_conv_kernals, \
-                    max_dense_nodes, input_shape, num_classes)
+input_shape = x_train.shape[1:]
+output_nodes = 10
+final_activation_func = 'softmax'
+loss_func = 'categorical_crossentropy'
+metrics = ['accuracy']
+
+genome_prototype = Genome(input_shape, output_nodes, final_activation_func, loss_func,metrics=metrics)
+genome_prototype.add(ConvGene())
+genome_prototype.add(DenseGene())
 
 # **Create and run the genetic program**
 # The next, and final, step is create a `DEvol` and run it. Here we specify
@@ -42,8 +43,12 @@ genome_handler = GenomeHandler(max_conv_layers, max_dense_layers, max_conv_kerna
 
 num_generations = 10
 population_size = 10
-num_epochs = 1
+num_epochs = 5
 
-devol = DEvol(genome_handler, 'genomes.csv')
-model, loss, accuracy = devol.run(dataset, num_generations, population_size, num_epochs)
+print('start training')
+trainer = DEvol(genome_prototype, 'genomes.csv')
+
+# our metric is mae, we should better use loss as objective
+model, loss, accuracy = trainer.run(dataset, num_generations, population_size, num_epochs, metric='accuracy')
 model.summary()
+

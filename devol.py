@@ -1,6 +1,10 @@
 from __future__ import print_function
 
-from genome_handler import GenomeHandler
+from genome import Genome
+from gene import Gene
+from conv_gene import ConvGene
+from dense_gene import DenseGene
+from recurrent_gene import RecurrentGene
 import numpy as np
 from keras.models import Sequential
 from keras.utils import np_utils
@@ -16,6 +20,7 @@ import sys
 import operator
 import gc
 import os
+import h5py
 
 METRIC_OPS = [operator.__lt__, operator.__gt__]
 METRIC_OBJECTIVES = [min, max]
@@ -34,7 +39,7 @@ class DEvol:
         print("Genome encoding and accuracy data stored at", self.datafile, "\n")
         with open(self.datafile, 'a') as csvfile:
             writer = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            genome = genome_handler.genome_representation() + ["Val Loss", "Val Accuracy"]
+            genome = genome_handler.representation + ["Val Loss", "Val Accuracy"]
             writer.writerow(genome)
 
     def set_objective(self, metric):
@@ -51,7 +56,7 @@ class DEvol:
         self.metric_objective = METRIC_OBJECTIVES[self.objective is 'max']
 
 
-    def run(self, dataset, num_generations, pop_size, epochs, fitness=None, metric='accuracy'):
+    def run(self, dataset, num_generations, pop_size, epochs, fitness=None, metric='loss'):
         """run genetic search on dataset given number of generations and population size
 
         Args:
@@ -119,11 +124,11 @@ class DEvol:
             model.fit(self.x_train, self.y_train, validation_data=(self.x_test, self.y_test),
                       epochs=epochs,
                       verbose=1,
-                      callbacks=[EarlyStopping(monitor='val_loss', patience=1, verbose=1)])
+                      callbacks=[EarlyStopping(monitor='val_loss', patience=2, verbose=1)])
             loss, accuracy = model.evaluate(self.x_test, self.y_test, verbose=0)
         except:
             loss = 6.66
-            accuracy = 1 / self.genome_handler.n_classes
+            accuracy = 0 #1 / self.genome_handler.output_nodes
             gc.collect()
             K.clear_session()
             tf.reset_default_graph()
