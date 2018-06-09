@@ -36,5 +36,7 @@ class RecurrentGene(Gene):
 
                 model.add(Activation(self.__activations__[subgenome[offset + 3]]))
                 model.add(Dropout(float(subgenome[offset + 4] / 20.0)))
+                if not self.return_sequences:
+                    break
 
             offset += self.layer_size
